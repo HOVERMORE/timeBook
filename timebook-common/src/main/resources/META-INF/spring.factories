@@ -1,0 +1,7 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+ hc.common.handler.GlobalExceptionHandler,\
+  hc.common.handler.MyMetaObjecthandler,\
+  hc.common.swagger.SwaggerConfiguration,\
+  hc.common.swagger.Swagger2Configuration,\
+  hc.common.config.WebMvcConfig,\
+  hc.common.customize.RedisCacheClient
