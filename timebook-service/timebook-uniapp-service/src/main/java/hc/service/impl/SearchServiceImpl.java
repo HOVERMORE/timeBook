@@ -1,5 +1,6 @@
 package hc.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import hc.service.AlbumService;
 import hc.service.ImagesService;
@@ -33,8 +34,8 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public ResponseResult searchAll(String context) {
-        List<Image> imageList=new ArrayList<>();
-        List<Album> albumList=new ArrayList<>();
+        Set<Image> images=new HashSet<>();
+        Set<Album> albums=new HashSet<>();
         List<String> split = StrUtil.split(context, ' ');
         Set<String> setSplit=new HashSet<>(split);
         for (String str : setSplit) {
@@ -46,16 +47,16 @@ public class SearchServiceImpl implements SearchService {
                             .eq("user_id", UserHolder.getUser().getUserId())
                             .ge("create_time", str)
                             .le("create_time", Tomorrow).list();
-                    imageList.addAll(list);
+                    images.addAll(list);
                 }
             }else{
                 List<Album> list = albumService.query().eq("user_id",UserHolder.getUser().getUserId())
                         .like("album_name", str).list();
-                albumList.addAll(list);
+                albums.addAll(list);
             }
         }
-        imageList=imageSortByDesc(imageList);
-        albumList=albumSortByDesc(albumList);
+        List<Image> imageList=imageSortByDesc(images);
+        List<Album> albumList=albumSortByDesc(albums);
         SearchDto searchDto=new SearchDto().setAlbumList(albumList).setImageList(imageList);
         return ResponseResult.okResult(searchDto);
     }
@@ -73,7 +74,11 @@ public class SearchServiceImpl implements SearchService {
             return "";
         }
     }
-    private List<Image> imageSortByDesc(List<Image> list){
+    private List<Image> imageSortByDesc(Set<Image> set){
+        if(CollUtil.isEmpty(set))
+            return null;
+        List<Image> list=new ArrayList<>();
+        list.addAll(set);
         Collections.sort(list, new Comparator<Image>(){
             @Override
             public int compare(Image i1, Image i2) {
@@ -82,13 +87,29 @@ public class SearchServiceImpl implements SearchService {
         });
         return list;
     }
-    private List<Album> albumSortByDesc(List<Album> list){
-        Collections.sort(list, new Comparator<Album>(){
+    private List<Album> albumSortByDesc(Set<Album> set){
+        if(CollUtil.isEmpty(set))
+            return null;
+        List<Album> list=new ArrayList<>();
+        list.addAll(set);
+        Album defaultAlbum=null;
+        int removeId=0;
+        Collections.sort(list, new Comparator<Album>() {
             @Override
             public int compare(Album a1, Album a2) {
                 return a2.getCreateTime().compareTo(a1.getCreateTime());
             }
         });
+        for(Album album:list){
+            if(album.getType()==0) {
+                defaultAlbum = album;
+                removeId=list.indexOf(album);
+            }
+        }
+        if(defaultAlbum!=null) {
+            list.remove(removeId);
+            list.add(0, defaultAlbum);
+        }
         return list;
     }
 }

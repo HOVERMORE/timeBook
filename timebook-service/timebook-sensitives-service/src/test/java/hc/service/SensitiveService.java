@@ -1,12 +1,17 @@
 package hc.service;
 
 import hc.common.customize.Sensitive;
+import hc.common.dtos.ResponseResult;
 import org.junit.jupiter.api.Test;
+import org.omg.PortableInterceptor.SUCCESSFUL;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Base64;
+
+
+
 @SpringBootTest
 public class SensitiveService{
     @Resource
@@ -16,8 +21,10 @@ public class SensitiveService{
 
 //        decode(sensitives2);
 //        sensitivesService.saveBatch(sensitivesList);
-        String str="黄桂清";
-        encode(str);
+        String str="hhh";
+        ResponseResult result = sensitivesService.checkSensitives(str);
+        System.out.println(result.getCode()+"  "+result.getErrorMsg());
+        //encode(str);
     }
 
     public  void decode(String str){
@@ -52,4 +59,5 @@ public class SensitiveService{
         String word=new String(encryptedBytes);
         System.out.println(word);
     }
+
 }

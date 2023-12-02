@@ -20,4 +20,6 @@ public interface AlbumService extends IService<Album> {
     ResponseResult updateAlbum(String albumId, String albumName);
 
     ResponseResult deleteAlbum(String albumId);
+
+     String getRedisCacheAlbumId(String id);
 }

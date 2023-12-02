@@ -4,11 +4,13 @@ package hc.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import hc.apis.sensitive.ISensitiveClient;
+import hc.common.customize.RedisCacheClient;
 import hc.common.customize.Sensitive;
 import hc.common.exception.CustomizeException;
 import hc.common.exception.DataException;
@@ -36,8 +38,7 @@ import static hc.LogUtils.error;
 import static hc.LogUtils.info;
 import static hc.RequestUtils.doGet;
 
-import static hc.common.constants.RedisConstants.LOGIN_USER_KEY;
-import static hc.common.constants.RedisConstants.LOGIN_USER_TTL;
+import static hc.common.constants.RedisConstants.*;
 import static hc.common.enums.AppHttpCodeEnum.*;
 import static hc.constants.WxConstants.*;
 
@@ -50,8 +51,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Resource
     private ISensitiveClient sensitiveClient;
-
-
+    @Resource
+    private RedisCacheClient redisCacheClient;
     @Resource
     private AlbumService albumService;
     @Override
@@ -71,6 +72,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user = query().eq("open_id", user.getOpenId()).one();
             albumService.createDefaultAlbum(user.getUserId());
         }else {
+            if(!isExist.getNickName().equals(user.getNickName()))
+                return ResponseResult.errorResult(PARAM_INVALID,"无效用户名");
             BeanUtil.copyProperties(isExist, user);
         }
         UserDto userDto= BeanUtil.copyProperties(user, UserDto.class);
@@ -80,7 +83,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         return ResponseResult.okResult(userDto);
     }
-
     public void saveRedis(UserDto userDto,String userId){
         //7.2，将user对象转为Hash存储
         Map<String, Object> userMap = BeanUtil.beanToMap(userDto,new HashMap<>(),
@@ -133,7 +135,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             error("修改失败");
             throw new ParamErrorException(NO_FOUND_PARAM);
         }
-        User org = getById(UserHolder.getUser().getUserId());
+        User org=redisCacheClient.queryWithPassThrough(CACHE_USER_KEY,UserHolder.getUser().getUserId(),User.class,this::getById,CACHE_USER_TTL,TimeUnit.DAYS);
         if(org==null){
             error("修改用户信息失败");
             throw new DataException(DATA_NOT_EXIST);
@@ -151,6 +153,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(!StrUtil.isBlank(user.getAvatarUrl())) {
             org.setAvatarUrl(user.getAvatarUrl());
         }
+        stringRedisTemplate.delete(CACHE_USER_KEY+UserHolder.getUser().getUserId());
         updateById(org);
         return ResponseResult.okResult(SUCCESS.getCode(),"修改成功");
     }
@@ -161,7 +164,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             info("userId为空");
             throw new ParamErrorException(NO_FOUND_PARAM);
         }
-        User user=getById(userId);
+        User user=redisCacheClient.queryWithPassThrough(CACHE_USER_KEY,userId,User.class,this::getById,CACHE_USER_TTL,TimeUnit.DAYS);
         UserDto userDto=BeanUtil.copyProperties(user,UserDto.class);
         return ResponseResult.okResult(userDto);
     }

@@ -1,9 +1,11 @@
 package hc.service.impl;
 
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import hc.common.customize.RedisCacheClient;
 import hc.common.exception.CustomizeException;
 import hc.common.exception.DataException;
 import hc.common.exception.ParamErrorException;
@@ -20,6 +22,7 @@ import hc.common.dtos.ResponseResult;
 import hc.uniapp.image.dtos.ImageDto;
 import hc.uniapp.image.dtos.RecentAlbumsDto;
 import hc.uniapp.image.pojos.Image;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,9 +35,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static hc.LogUtils.error;
 import static hc.LogUtils.info;
+import static hc.common.constants.RedisConstants.*;
 import static hc.common.customize.JacksonObjectMapper.DEFAULT_DATE_TIME_FORMAT;
 import static hc.common.enums.AppHttpCodeEnum.*;
 
@@ -49,6 +54,11 @@ public class ImagesServiceImpl extends ServiceImpl<ImagesMapper, Image> implemen
 
     @Resource
     private AlbumService albumService;
+    @Resource
+    private RedisCacheClient redisCacheClient;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public ResponseResult saveImage(MultipartFile multipartFile, String albumId) {
@@ -87,13 +97,13 @@ public class ImagesServiceImpl extends ServiceImpl<ImagesMapper, Image> implemen
 
     @Override
     public ResponseResult getAll(String albumId) {
-        String DEFAULT_ALBUM=getDefaultAlbum();
         if(!albumService.albumIsExists(albumId)){
             info("相册不存在");
             throw new DataException(DATA_NOT_EXIST);
         }
+        String defaultAlbumId=albumService.getRedisCacheAlbumId(UserHolder.getUser().getUserId());
         ResponseResult<List<Image>> result=new ResponseResult<>();
-        if(albumId.equals(DEFAULT_ALBUM)) {
+        if(albumId.equals(defaultAlbumId)) {
             List<Image> imageList = query().eq("user_id", UserHolder.getUser().getUserId()).orderByDesc("create_time").list();
             result.ok(imageList);
         }
@@ -112,7 +122,10 @@ public class ImagesServiceImpl extends ServiceImpl<ImagesMapper, Image> implemen
             info("imageId缺失");
             throw new ParamErrorException(NO_FOUND_PARAM);
         }
-        Image image = getById(imageId);
+        Image image = redisCacheClient.queryWithPassThrough(CACHE_IMAGE_KEY,imageId,Image.class,
+                this::getById,CACHE_IMAGE_TTL, TimeUnit.DAYS);
+        if(image==null)
+            return ResponseResult.errorResult(DATA_NOT_EXIST,"网络出现问题，请稍后访问");
         return ResponseResult.okResult(image);
     }
 
@@ -123,6 +136,11 @@ public class ImagesServiceImpl extends ServiceImpl<ImagesMapper, Image> implemen
             info("imageDto缺失，修改失败");
             throw new ParamErrorException(NO_FOUND_PARAM);
         }
+        if(!albumService.albumIsExists(imageDto.getOrgAlbumId())||
+                !albumService.albumIsExists(imageDto.getUpdateAlbumId())) {
+            info("不能移动或复制到不存在相册");
+            throw new DataException(DATA_NOT_EXIST);
+        }
         ResponseResult update = imageAlbumService.updateImageToAlbum(imageDto);
         return update;
     }
@@ -130,23 +148,26 @@ public class ImagesServiceImpl extends ServiceImpl<ImagesMapper, Image> implemen
     @Transactional
     @Override
     public ResponseResult deleteImage(String imageId, String albumId) {
-        String DEFAULT_ALBUM=getDefaultAlbum();
         if(StrUtil.isBlank(albumId)||StrUtil.isBlank(imageId)){
             info("参数缺失，删除图片失败");
             throw new ParamErrorException(NO_FOUND_PARAM);
         }
-        if(albumId.equals(DEFAULT_ALBUM)){
+        String defaultAlbumId=albumService.getRedisCacheAlbumId(UserHolder.getUser().getUserId());
+        if(albumId.equals(defaultAlbumId)){
+            stringRedisTemplate.delete(CACHE_IMAGE_KEY+imageId);
             removeById(imageId);
             List<Image> list = query().eq("user_id", UserHolder.getUser().getUserId())
                     .orderByDesc("create_time").list();
-            Image image = list.get(0);
-            Album album = albumService.getById(DEFAULT_ALBUM);
-            if(image!=null) {
+            Album album=redisCacheClient.queryWithPassThrough(CACHE_ALBUM_KEY,albumId
+                    ,Album.class,albumService::getById,CACHE_ALBUM_TTL,TimeUnit.DAYS);
+            if(CollUtil.isNotEmpty(list)) {
+                Image image = list.get(0);
                 album.setImageUrl(image.getImageUrl());
-                albumService.updateById(album);
             }else{
                 album.setImageUrl("");
             }
+            stringRedisTemplate.delete(CACHE_ALBUM_KEY+albumId);
+            albumService.updateById(album);
             return imageAlbumService.deleteAllAlbumPhotos(imageId);
         }else {
             return imageAlbumService.deleteOtherAlbumPhotos(imageId,albumId);
@@ -176,10 +197,6 @@ public class ImagesServiceImpl extends ServiceImpl<ImagesMapper, Image> implemen
             error("无法获取当前时间");
             return "0";
         }
-    }
-    private String getDefaultAlbum(){
-        return albumService.query().eq("user_id", UserHolder.getUser().getUserId())
-                .eq("type",0).one().getAlbumId();
     }
 
     private List<Image> getRecentImage(String time){
