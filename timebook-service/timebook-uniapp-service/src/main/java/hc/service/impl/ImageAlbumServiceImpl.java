@@ -9,7 +9,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 import hc.common.customize.RedisCacheClient;
-import hc.common.customize.RedisData;
+
 import hc.common.exception.ServerErrorException;
 
 import hc.mapper.ImageAlbumMapper;
@@ -214,7 +214,7 @@ public class ImageAlbumServiceImpl extends ServiceImpl<ImageAlbumMapper, ImageAl
                 .eq("image_id", imageId)
                 .eq("user_id", UserHolder.getUser().getUserId()).one();
         if(one!=null)
-            stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(one),DEFAULT_ALBUM_TTL,TimeUnit.DAYS);
+            stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(one),CACHE_ALBUM_IMAGE_DTO_TTL,TimeUnit.DAYS);
         return one;
     }
 }

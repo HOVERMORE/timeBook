@@ -10,6 +10,8 @@ import java.io.Serializable;
  */
 public class ResponseResult<T> implements Serializable {
     private String msg;
+
+
     private Integer code;
     private T data;
 
@@ -112,5 +114,14 @@ public class ResponseResult<T> implements Serializable {
 
     public void setData(T data) {
         this.data = data;
+    }
+
+    @Override
+    public String toString() {
+        return "ResponseResult{" +
+                "msg='" + msg + '\'' +
+                ", code=" + code +
+                ", data=" + data +
+                '}';
     }
 }

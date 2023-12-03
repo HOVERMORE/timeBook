@@ -5,12 +5,16 @@ import hc.common.dtos.ResponseResult;
 import hc.service.*;
 import hc.thread.UserHolder;
 import hc.uniapp.album.pojos.Album;
+import hc.uniapp.note.dtos.NoteDto;
+import hc.uniapp.note.pojos.Note;
 import hc.uniapp.user.pojos.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static hc.common.constants.RedisConstants.CACHE_ALBUM_KEY;
@@ -30,6 +34,8 @@ public class UniappServiceTest {
     private ImageAlbumService imageAlbumService;
     @Resource
     private ImagesService imagesService;
+    @Resource
+    private NoteService noteService;
     @Test
     void test(){
         setUser();
@@ -58,5 +64,24 @@ public class UniappServiceTest {
     void testDefault(){
         setUser();
         imagesService.deleteImage("1111","1111");
+    }
+
+    @Test
+    void testNote(){
+        setUser();
+        List<String> ids=new ArrayList<>();
+        ids.add("1730552541839761409");
+        NoteDto noteDto=new NoteDto().setUserId(UserHolder.getUser().getUserId()).setEmoji("1")
+                .setContent("黄清").setImageIds(ids);
+        ResponseResult result = noteService.saveNote(noteDto);
+        System.out.println(result.toString());
+    }
+    @Test
+    void save(){
+        setUser();
+        Note note=new Note();
+        note.setUserId(UserHolder.getUser().getUserId());
+        noteService.save(note);
+        System.out.println(note.getNoteId());
     }
 }
