@@ -24,6 +24,7 @@ public class RequestUtils {
             sb.append("=");
             sb.append(e.getValue());
         }
+        sb.toString();
         ResponseEntity<String> response = restTemplate.getForEntity(url+sb.toString(),String.class);
         return response.getBody();
     }

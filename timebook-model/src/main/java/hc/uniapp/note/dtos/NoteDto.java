@@ -4,11 +4,12 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
 @Accessors(chain = true)
-public class NoteDto {
+public class NoteDto implements Serializable {
     @ApiModelProperty(value = "日记Id",required = false)
     private String noteId;
 

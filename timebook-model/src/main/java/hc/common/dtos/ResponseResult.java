@@ -1,6 +1,7 @@
 package hc.common.dtos;
 
 import hc.common.enums.AppHttpCodeEnum;
+import lombok.ToString;
 
 import java.io.Serializable;
 
@@ -8,6 +9,7 @@ import java.io.Serializable;
  * 结果返回类
  * @param <T>
  */
+@ToString
 public class ResponseResult<T> implements Serializable {
     private String msg;
 
@@ -116,12 +118,4 @@ public class ResponseResult<T> implements Serializable {
         this.data = data;
     }
 
-    @Override
-    public String toString() {
-        return "ResponseResult{" +
-                "msg='" + msg + '\'' +
-                ", code=" + code +
-                ", data=" + data +
-                '}';
-    }
 }

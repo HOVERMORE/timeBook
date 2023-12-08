@@ -21,23 +21,26 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static hc.LogUtils.info;
 
 
 @Service
 public class sensitivesServiceImpl extends ServiceImpl<SensitivesMapper,Sensitive> implements SensitivesService {
     @Override
     public ResponseResult checkSensitives(String content) {
+        info("敏感词校验中");
         List<Sensitive> sensitiveList=list();
         List<String> sensitives = sensitiveList.stream().map(Sensitive::getSensitives).collect(Collectors.toList());
         SensitiveWordUtil.initMap(sensitives);
+        content = content.replaceAll("\\d", "").replaceAll("\\s+","");
         byte[] bytes = content.getBytes();
         byte[] encryptedBytes = Base64.getEncoder().encode(bytes);
         String word=new String(encryptedBytes);
         Map<String, Integer> map = SensitiveWordUtil.matchWords(word);
         if(map.size()>0)
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_BREACHES);
+        info("敏感词校验完毕");
         return ResponseResult.okResult();
     }
-
 
 }

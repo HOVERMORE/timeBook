@@ -197,5 +197,4 @@ public class AlbumServiceImpl extends ServiceImpl<AlbumMapper, Album> implements
         }
         return list;
     }
-
 }

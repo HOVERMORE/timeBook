@@ -6,5 +6,5 @@ import hc.common.dtos.ResponseResult;
 
 public interface SensitivesService extends IService<Sensitive> {
 
-    ResponseResult checkSensitives(String context);
+    ResponseResult checkSensitives(String content);
 }

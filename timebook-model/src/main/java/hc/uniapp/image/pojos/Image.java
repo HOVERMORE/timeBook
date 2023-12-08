@@ -3,6 +3,7 @@ package hc.uniapp.image.pojos;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("tb_image")
+@ToString
 public class Image implements Serializable {
     /**
      * 图片id

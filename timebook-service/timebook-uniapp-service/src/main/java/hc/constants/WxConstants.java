@@ -1,7 +1,10 @@
 package hc.constants;
 
+import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+@Component
 public class WxConstants {
     public static String APP_ID;
     public static String APP_SECRET;

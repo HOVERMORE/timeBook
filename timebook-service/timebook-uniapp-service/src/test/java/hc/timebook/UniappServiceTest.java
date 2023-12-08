@@ -1,13 +1,19 @@
 package hc.timebook;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.json.JSONUtil;
+import hc.api.PythonSocket;
 import hc.common.customize.RedisCacheClient;
 import hc.common.dtos.ResponseResult;
 import hc.service.*;
 import hc.thread.UserHolder;
 import hc.uniapp.album.pojos.Album;
+import hc.uniapp.image.pojos.Image;
 import hc.uniapp.note.dtos.NoteDto;
 import hc.uniapp.note.pojos.Note;
 import hc.uniapp.user.pojos.User;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -56,9 +62,14 @@ public class UniappServiceTest {
         else
             album.toString();
     }
+    @BeforeEach
     void setUser(){
         User byId = userService.getById("1729076021958950914");
         UserHolder.saveUser(byId);
+    }
+    @AfterEach
+    void clearUser(){
+        UserHolder.removeUser();
     }
     @Test
     void testDefault(){
@@ -67,21 +78,65 @@ public class UniappServiceTest {
     }
 
     @Test
-    void testNote(){
+    void saveNote(){
         setUser();
         List<String> ids=new ArrayList<>();
         ids.add("1730552541839761409");
+        ids.add("1730556408891666433");
         NoteDto noteDto=new NoteDto().setUserId(UserHolder.getUser().getUserId()).setEmoji("1")
-                .setContent("黄清").setImageIds(ids);
+                .setContent("测试2").setImageIds(ids);
         ResponseResult result = noteService.saveNote(noteDto);
         System.out.println(result.toString());
     }
     @Test
-    void save(){
+    void updateNote(){
         setUser();
-        Note note=new Note();
+        Note note=new Note().setNoteId("1731874253558648834").setContent("测试");
         note.setUserId(UserHolder.getUser().getUserId());
-        noteService.save(note);
-        System.out.println(note.getNoteId());
+        NoteDto noteDto= BeanUtil.copyProperties(note,NoteDto.class);
+        ResponseResult result=noteService.updateNote(noteDto);
+        System.out.println(result.toString());
+    }
+    @Test
+    void deleteNote(){
+        setUser();
+        Note note=new Note().setNoteId("1731874253558648834");
+        note.setUserId(UserHolder.getUser().getUserId());
+        NoteDto noteDto= BeanUtil.copyProperties(note,NoteDto.class);
+        ResponseResult result=noteService.deleteNote(noteDto.getNoteId());
+        System.out.println(result.toString());
+        clearUser();
+    }
+    @Test
+    void getNoteALl(){
+        setUser();
+        ResponseResult result=noteService.findList();
+        System.out.println(result);
+        clearUser();
+    }
+    @Test
+    void searchServiceSensitive(){
+        setUser();
+        ResponseResult result=searchService.searchAll("全  bingdu");
+        System.out.println(result);
+    }
+    @Test
+    void tsetImage(){
+        Image image=imagesService.getById("1730556408891666433");
+        System.out.println(JSONUtil.toJsonStr(image));
+    }
+
+    @Test
+    public void testremoteCall() throws Exception {
+        Image image=imagesService.getById("1730556408891666433");
+        System.out.println("发送数据："+JSONUtil.toJsonStr(image));
+        PythonSocket pythonSocket = new PythonSocket();
+        System.out.println("接收数据：");
+        pythonSocket.remoteCall(JSONUtil.toJsonStr(image));
+    }
+    @Test
+    void getNode(){
+        Note byId = noteService.getById("1732976803716403202");
+        System.out.println(byId);
     }
 }

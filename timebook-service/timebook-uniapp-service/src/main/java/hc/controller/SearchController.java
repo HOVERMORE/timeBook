@@ -18,9 +18,15 @@ import javax.annotation.Resource;
 public class SearchController {
     @Resource
     private SearchService searchService;
-    @GetMapping("/searchAll")
-    @ApiOperation("查询所有")
-    public ResponseResult searchAll(@RequestParam String context){
-        return searchService.searchAll(context);
+    @GetMapping("/albumOrImage/searchAll")
+    @ApiOperation("查询所有相册或者图片")
+    public ResponseResult searchAll(@RequestParam String content){
+        return searchService.searchAll(content);
+    }
+
+    @GetMapping("/note/searchAll")
+    @ApiOperation("查询日记")
+    public ResponseResult searchNote(@RequestParam String content){
+        return searchService.searchNote(content);
     }
 }

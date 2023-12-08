@@ -8,8 +8,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
-
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @SpringBootTest
@@ -21,10 +23,10 @@ public class SensitiveService{
 
 //        decode(sensitives2);
 //        sensitivesService.saveBatch(sensitivesList);
-        String str="hhh";
-        ResponseResult result = sensitivesService.checkSensitives(str);
-        System.out.println(result.getCode()+"  "+result.getErrorMsg());
-        //encode(str);
+        String str="root";
+//        ResponseResult result = sensitivesService.checkSensitives(str);
+//        System.out.println(result.getCode()+"  "+result.getErrorMsg());
+        encode(str);
     }
 
     public  void decode(String str){
@@ -60,4 +62,15 @@ public class SensitiveService{
         System.out.println(word);
     }
 
+    @Test
+    void testString(){
+        String content="root ";
+        List<String> split = Arrays.stream(content.split("\\s+")).collect(Collectors.toList());
+        System.out.println(split.toString());
+        Sensitive sensitive=new Sensitive().setSensitives(split.toString()
+                .replace("[","")
+                .replace("]",""));
+        ResponseResult result=sensitivesService.checkSensitives(sensitive.getSensitives());
+        System.out.println(result);
+    }
 }

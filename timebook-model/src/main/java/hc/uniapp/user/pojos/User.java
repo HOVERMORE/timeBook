@@ -4,6 +4,7 @@ package hc.uniapp.user.pojos;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("tb_user")
+@ToString
 public class User implements Serializable {
     /**
      * 用户id

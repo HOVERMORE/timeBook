@@ -1,8 +1,11 @@
-package hc.uniapp.note.pojos;
+package hc.uniapp.note.dtos;
 
-import com.baomidou.mybatisplus.annotation.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import hc.uniapp.image.pojos.Image;
+import hc.uniapp.note.pojos.Note;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.ToString;
@@ -14,12 +17,9 @@ import java.util.List;
 
 @Data
 @Accessors(chain = true)
-@TableName("tb_note")
-@ToString
-public class Note implements Serializable {
+public class ElasticSearchNoteDto implements Serializable {
 
     @ApiModelProperty(value = "日记Id",required =true)
-    @TableId(type = IdType.ASSIGN_ID)
     private String noteId;
 
     @ApiModelProperty(value = "用户Id",required = false)
@@ -32,14 +32,15 @@ public class Note implements Serializable {
     private String content;
 
     @ApiModelProperty(value = "图片Id集合",required = true)
-    @TableField(exist = false)
     private List<Image> images;
 
-    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(fill= FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
     private Integer isDeleted;
+
+    @ApiModelProperty(value = "高亮内容",required = true)
+    private String highLight;
+
 }

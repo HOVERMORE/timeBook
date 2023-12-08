@@ -2,20 +2,19 @@ package hc.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import hc.apis.sensitive.ISensitiveClient;
 import hc.common.customize.RedisCacheClient;
 import hc.common.customize.Sensitive;
 import hc.common.dtos.ResponseResult;
 import hc.common.enums.AppHttpCodeEnum;
+import hc.common.exception.CustomizeException;
 import hc.common.exception.ParamErrorException;
 import hc.mapper.NoteMapper;
 import hc.service.ImageNoteService;
 import hc.service.ImagesService;
 import hc.service.NoteService;
 import hc.thread.UserHolder;
-import hc.uniapp.customize.ImageAlbumDto;
 import hc.uniapp.image.pojos.Image;
 import hc.uniapp.note.dtos.ImageNoteDto;
 import hc.uniapp.note.dtos.NoteDto;
@@ -26,11 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static hc.LogUtils.info;
+import static hc.common.constants.ElasticSearchConstants.TIME_BOOK;
 import static hc.common.constants.RedisConstants.*;
 import static hc.common.enums.AppHttpCodeEnum.*;
 
@@ -47,12 +49,13 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
     private RedisCacheClient redisCacheClient;
     @Resource
     private ISensitiveClient sensitiveClient;
+    @Resource
+    private ElasticSearcherClient elasticSearcherClient;
     @Override
     public ResponseResult findList() {
         List<Note> notes=query().eq("user_id", UserHolder.getUser().getUserId())
                 .orderByDesc("create_time").list().stream().peek(note -> {
-                    List<ImageNoteDto> imageNoteList=imageNoteService.query().eq("note_id",note.getNoteId())
-                            .eq("user_id",UserHolder.getUser().getUserId()).list();
+                    List<ImageNoteDto> imageNoteList=imageNoteService.query().eq("note_id",note.getNoteId()).list();
                     List<Image> images=new ArrayList<>();
                     for (ImageNoteDto imageNoteDto:imageNoteList){
                         Image image = redisCacheClient.queryWithPassThrough(CACHE_IMAGE_KEY,imageNoteDto.getImageId(),Image.class,
@@ -83,8 +86,9 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
                 return result;
             org.setContent(noteDto.getContent());
         }
-        if(StrUtil.isNotBlank(noteDto.getEmoji()))
+        if(StrUtil.isNotBlank(noteDto.getEmoji())) {
             org.setEmoji(noteDto.getEmoji());
+        }
         if(CollUtil.isNotEmpty(noteDto.getImageIds())) {
             List<Image> imageList = new ArrayList<>();
             List<String> imageIds = noteDto.getImageIds();
@@ -96,7 +100,9 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
             org.setImages(imageList);
         }
         stringRedisTemplate.delete(CACHE_NOTE_KEY+noteDto.getNoteId());
+        elasticSearcherClient.deleteDocument(TIME_BOOK,org.getNoteId());
         updateById(org);
+        elasticSearcherClient.queryDocumentById(TIME_BOOK,org,Note::getNoteId, Note.class);
         return ResponseResult.okResult(200,"修改成功");
     }
 
@@ -122,6 +128,10 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
                     .setImageId(id);
             imageNoteService.save(imageNoteDto);
         }
+        boolean bool = elasticSearcherClient.addIndexDocumentById(TIME_BOOK, note, Note::getNoteId);
+        if(!bool){
+            throw new CustomizeException("es新增搜索失败");
+        }
         return ResponseResult.okResult();
     }
 
@@ -129,8 +139,12 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
     @Transactional
     public ResponseResult deleteNote(String noteId) {
         removeById(noteId);
-        List<String> removeIds = imageNoteService.query().eq("note_id", noteId).list().stream().map(ImageNoteDto::getImageNoteId).collect(Collectors.toList());
-        imageNoteService.removeByIds(removeIds);
+        List<String> removeImageNoteIds = imageNoteService.query().eq("note_id", noteId).list().stream().map(ImageNoteDto::getImageNoteId).collect(Collectors.toList());
+        imageNoteService.removeByIds(removeImageNoteIds);
+        boolean bool = elasticSearcherClient.deleteDocument(TIME_BOOK, noteId);
+        if(!bool){
+            throw new CustomizeException("es删除搜索失败");
+        }
         return ResponseResult.okResult();
     }
 }

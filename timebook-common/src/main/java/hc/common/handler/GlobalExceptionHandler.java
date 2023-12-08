@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
     public ResponseResult CustomizeException(CustomizeException e){
         error("自定义异常： "+e.getMessage());
         return ResponseResult.errorResult(AppHttpCodeEnum.UNKNOWN_ERROR,
-                AppHttpCodeEnum.UNKNOWN_ERROR.getErrorMsg());
+               e.getMessage());
     }
 
     @ResponseBody

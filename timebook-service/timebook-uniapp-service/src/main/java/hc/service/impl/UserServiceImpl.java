@@ -110,8 +110,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Map<String,String> param = new HashMap<>();
         param.put("appid",APP_ID);
         param.put("secret",APP_SECRET);
-        param.put("js_code", OPEN_ID_URL);
+        param.put("js_code", code);
         param.put("grant_type","authorization_code");
+        info("已经过openId接口");
         String result;
         try{
             result = doGet(OPEN_ID_URL,param);

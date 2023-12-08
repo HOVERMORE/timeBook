@@ -12,6 +12,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class ISensitiveClientFallback implements ISensitiveClient {
     @Override
     public ResponseResult checkIsSensitive(@RequestBody Sensitive sensitive) {
-        return ResponseResult.errorResult(AppHttpCodeEnum.SERVER_ERROR,"服务连接超时，获取数据失败");
+        return ResponseResult.errorResult(AppHttpCodeEnum.SERVER_ERROR,"敏感词校验服务失败");
     }
 }
