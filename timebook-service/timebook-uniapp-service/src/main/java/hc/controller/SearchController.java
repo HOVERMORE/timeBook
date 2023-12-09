@@ -20,13 +20,19 @@ public class SearchController {
     private SearchService searchService;
     @GetMapping("/albumOrImage/searchAll")
     @ApiOperation("查询所有相册或者图片")
-    public ResponseResult searchAll(@RequestParam String content){
-        return searchService.searchAll(content);
+    public ResponseResult searchAlbumOrImage(@RequestParam String content){
+        return searchService.searchAlbumOrImage(content);
     }
 
     @GetMapping("/note/searchAll")
     @ApiOperation("查询日记")
     public ResponseResult searchNote(@RequestParam String content){
         return searchService.searchNote(content);
+    }
+
+    @GetMapping("/note/suggestion")
+    @ApiOperation("自动补全搜索日记")
+    public ResponseResult searchSuggestion(@RequestParam String prefix){
+        return searchService.searchSuggestion(prefix);
     }
 }

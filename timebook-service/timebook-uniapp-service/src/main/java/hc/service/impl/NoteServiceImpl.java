@@ -17,7 +17,9 @@ import hc.service.NoteService;
 import hc.thread.UserHolder;
 import hc.uniapp.image.pojos.Image;
 import hc.uniapp.note.dtos.ImageNoteDto;
+import hc.uniapp.note.dtos.NoteHighDocDto;
 import hc.uniapp.note.dtos.NoteDto;
+import hc.uniapp.note.dtos.NoteSugDocDto;
 import hc.uniapp.note.pojos.Note;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -25,9 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -102,7 +102,8 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
         stringRedisTemplate.delete(CACHE_NOTE_KEY+noteDto.getNoteId());
         elasticSearcherClient.deleteDocument(TIME_BOOK,org.getNoteId());
         updateById(org);
-        elasticSearcherClient.queryDocumentById(TIME_BOOK,org,Note::getNoteId, Note.class);
+        elasticSearcherClient.addIndexDocumentById(TIME_BOOK,
+                new NoteHighDocDto(org), NoteHighDocDto::getNoteId);
         return ResponseResult.okResult(200,"修改成功");
     }
 
@@ -128,7 +129,8 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
                     .setImageId(id);
             imageNoteService.save(imageNoteDto);
         }
-        boolean bool = elasticSearcherClient.addIndexDocumentById(TIME_BOOK, note, Note::getNoteId);
+        boolean bool = elasticSearcherClient.addIndexDocumentById(TIME_BOOK,
+                new NoteSugDocDto(note), NoteSugDocDto::getNoteId);
         if(!bool){
             throw new CustomizeException("es新增搜索失败");
         }

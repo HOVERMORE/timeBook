@@ -79,7 +79,8 @@ public class AlbumServiceImpl extends ServiceImpl<AlbumMapper, Album> implements
             return ResponseResult.errorResult(DATA_EXIST,"相册名已存在");
         Album album=new Album();
         Sensitive sensitive=new Sensitive();
-        ResponseResult result = sensitiveClient.checkIsSensitive(sensitive.setSensitives(saveAlbumDto.getAlbumName()));
+        ResponseResult result = sensitiveClient.checkIsSensitive(sensitive
+                .setSensitives(saveAlbumDto.getAlbumName()));
         if(result.getCode()!=SUCCESS.getCode())
             return result;
         album.setUserId(saveAlbumDto.getUserId());

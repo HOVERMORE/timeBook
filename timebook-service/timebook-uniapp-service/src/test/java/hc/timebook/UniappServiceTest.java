@@ -46,7 +46,7 @@ public class UniappServiceTest {
     void test(){
         setUser();
         String content="全 全 人 人 人像 2023-12-01 2023-12-02 2023-12-01";
-        ResponseResult result = searchService.searchAll(content);
+        ResponseResult result = searchService.searchAlbumOrImage(content);
         System.out.println(result.getCode());
         System.out.println(result.getData().toString());
     }
@@ -117,7 +117,7 @@ public class UniappServiceTest {
     @Test
     void searchServiceSensitive(){
         setUser();
-        ResponseResult result=searchService.searchAll("全  bingdu");
+        ResponseResult result=searchService.searchAlbumOrImage("全  bingdu");
         System.out.println(result);
     }
     @Test
@@ -127,11 +127,10 @@ public class UniappServiceTest {
     }
 
     @Test
-    public void testremoteCall() throws Exception {
+    public void testApi() throws Exception {
         Image image=imagesService.getById("1730556408891666433");
         System.out.println("发送数据："+JSONUtil.toJsonStr(image));
         PythonSocket pythonSocket = new PythonSocket();
-        System.out.println("接收数据：");
         pythonSocket.remoteCall(JSONUtil.toJsonStr(image));
     }
     @Test

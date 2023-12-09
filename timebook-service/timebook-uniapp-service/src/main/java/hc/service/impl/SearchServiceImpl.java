@@ -1,10 +1,10 @@
 package hc.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import hc.apis.sensitive.ISensitiveClient;
 import hc.common.customize.Sensitive;
+import hc.common.exception.ParamErrorException;
 import hc.service.AlbumService;
 import hc.service.ImageNoteService;
 import hc.service.ImagesService;
@@ -14,9 +14,8 @@ import hc.thread.UserHolder;
 import hc.uniapp.album.pojos.Album;
 import hc.uniapp.customize.SearchDto;
 import hc.uniapp.image.pojos.Image;
-import hc.uniapp.note.dtos.ElasticSearchNoteDto;
+import hc.uniapp.note.dtos.NoteHighDocDto;
 import hc.uniapp.note.dtos.ImageNoteDto;
-import hc.uniapp.note.pojos.Note;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -27,7 +26,9 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static hc.LogUtils.info;
 import static hc.common.constants.ElasticSearchConstants.*;
+import static hc.common.enums.AppHttpCodeEnum.NO_FOUND_PARAM;
 import static hc.common.enums.AppHttpCodeEnum.SUCCESS;
 
 @Service
@@ -43,7 +44,11 @@ public class SearchServiceImpl implements SearchService {
     @Resource
     private ImageNoteService imageNoteService;
     @Override
-    public ResponseResult searchAll(String content) {
+    public ResponseResult searchAlbumOrImage(String content) {
+        if(StrUtil.isBlank(content)){
+            info("搜索内容为空");
+            throw new ParamErrorException(NO_FOUND_PARAM);
+        }
         Set<Image> images=new HashSet<>();
         Set<Album> albums=new HashSet<>();
         List<String> split =Arrays.stream(content.split("\\s+")).collect(Collectors.toList());
@@ -78,28 +83,49 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public ResponseResult searchNote(String content) {
+        if(StrUtil.isBlank(content)){
+            info("搜索内容为空");
+            throw new ParamErrorException(NO_FOUND_PARAM);
+        }
         Sensitive sensitive=new Sensitive().setSensitives(content);
         ResponseResult result = sensitiveClient.checkIsSensitive(sensitive);
         if(result.getCode()!=SUCCESS.getCode())
             return result;
-        List<ElasticSearchNoteDto> noteDtos = elasticSearcherClient
-                .queryHighLightAndSort(TIME_BOOK, CONTENT, content, CREATE_TIME, CONTENT);
-        List<Note> noteList=new ArrayList<>();
-        for(ElasticSearchNoteDto elasticSearchNoteDto:noteDtos) {
-            Note note=new Note();
-            BeanUtil.copyProperties(elasticSearchNoteDto,note);
-            List<ImageNoteDto> imageNoteDtoList = imageNoteService.query()
-                    .eq("note_id", note.getNoteId()).list();
-            List<Image> images=new ArrayList<>();
-            for (ImageNoteDto i: imageNoteDtoList){
-                Image image = imagesService.getById(i.getImageId());
-                images.add(image);
-            }
-            note.setImages(images);
-            noteList.add(note);
+        String searchColumn;
+        if(content.contains("-")&&checkDateTime(content)){
+            searchColumn=SEARCH_ALL_TIME;
+        }else{
+            searchColumn=SEARCH_CONTENT;
         }
-        return ResponseResult.okResult(noteList);
+        List<NoteHighDocDto> noteDtos = elasticSearcherClient
+                .queryHighLightAndSort(TIME_BOOK, searchColumn, content, CREATE_TIME, HIGH_COLUMN_CONTENT).stream()
+                .peek(o->{
+                            List<ImageNoteDto> imageNoteDtoList = imageNoteService.query()
+                                    .eq("note_id", o.getNoteId()).list();
+                            List<Image> images=new ArrayList<>();
+                            for (ImageNoteDto i: imageNoteDtoList){
+                                Image image = imagesService.getById(i.getImageId());
+                                images.add(image);
+                            }
+                            o.setImages(images);
+                        }).collect(Collectors.toList());
+        return ResponseResult.okResult(noteDtos);
     }
+
+    @Override
+    public ResponseResult searchSuggestion(String prefix) {
+        if(StrUtil.isBlank(prefix)){
+            info("搜索内容为空");
+            throw new ParamErrorException(NO_FOUND_PARAM);
+        }
+        Sensitive sensitive=new Sensitive().setSensitives(prefix);
+        ResponseResult result = sensitiveClient.checkIsSensitive(sensitive);
+        if(result.getCode()!=SUCCESS.getCode())
+            return result;
+        List<String> suggests = elasticSearcherClient.querySuggest(TIME_BOOK, SEARCH_SUGGESTION, prefix);
+        return ResponseResult.okResult(suggests);
+    }
+
     private boolean checkDateTime(String time){
         try {
             LocalDate.parse(time);

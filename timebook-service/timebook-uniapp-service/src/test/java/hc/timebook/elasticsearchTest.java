@@ -3,7 +3,7 @@ package hc.timebook;
 import hc.service.impl.ElasticSearcherClient;
 import hc.common.dtos.ResponseResult;
 import hc.service.NoteService;
-import hc.uniapp.note.dtos.ElasticSearchNoteDto;
+import hc.uniapp.note.dtos.NoteHighDocDto;
 import hc.uniapp.note.pojos.Note;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +13,7 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static hc.common.constants.ElasticSearchConstants.*;
 
@@ -40,8 +41,8 @@ public class elasticsearchTest {
     }
     @Test
     void testQueryHighLightAndSort(){
-        List<ElasticSearchNoteDto> noteDtos = client.queryHighLightAndSort(TIME_BOOK,
-                CONTENT, "测试", CREATE_TIME, CONTENT);
+        List<NoteHighDocDto> noteDtos = client.queryHighLightAndSort(TIME_BOOK,
+                SEARCH_CONTENT, "测试", CREATE_TIME, SEARCH_CONTENT);
         ResponseResult result= new ResponseResult<>();
         result.setData(noteDtos);
         System.out.println(result);
@@ -54,7 +55,10 @@ public class elasticsearchTest {
     @Test
     void addByIds(){
         List<Note> list = noteService.list();
-        client.addIndexDocumentByIds(TIME_BOOK,list, Note::getNoteId);
+        List<NoteHighDocDto> noteDocList = list.stream()
+                .map(note -> new NoteHighDocDto(note)) // 根据 Note 创建 NoteDoc
+                .collect(Collectors.toList());
+        client.addIndexDocumentByIds(TIME_BOOK,noteDocList, NoteHighDocDto::getNoteId);
     }
     /**
      判断字符串是否含有Emoji表情
@@ -75,5 +79,11 @@ public class elasticsearchTest {
         Note note = noteService.getById("1732976803716403202");
         System.out.println(note);
         client.addIndexDocumentById(TIME_BOOK,note, Note::getNoteId);
+    }
+    @Test
+    void suggest(){
+        String p="c";
+        List<String> suggests = client.querySuggest(TIME_BOOK, SEARCH_SUGGESTION, p);
+        System.out.println(suggests);
     }
 }

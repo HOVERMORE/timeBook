@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import hc.uniapp.image.pojos.Image;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
@@ -16,6 +18,8 @@ import java.util.List;
 @Accessors(chain = true)
 @TableName("tb_note")
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class Note implements Serializable {
 
     @ApiModelProperty(value = "日记Id",required =true)

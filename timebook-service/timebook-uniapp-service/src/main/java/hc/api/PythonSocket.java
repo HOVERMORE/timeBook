@@ -14,7 +14,8 @@ public class PythonSocket {
     }
  
     public Object remoteCall(String content) {
-        String HOST = "192.168.2.54";
+        //String HOST = "192.168.2.54";
+        String HOST="192.168.2.89";
         Integer PORT = 12345;
         Logger log = Logger.getLogger(this.getClass().getName());
         JSONObject jsonObject = new JSONObject();
@@ -41,18 +42,25 @@ public class PythonSocket {
             BufferedReader br = new BufferedReader(new InputStreamReader(is, "utf-8"));
             String tmp = null;
             StringBuilder sb = new StringBuilder();
+//            String test=br.readLine();
+//            System.out.println(test);
             // 读取内容
+//            if(br.readLine()==null){
+//                System.out.println("这里什么也没有");
+//                return null;
+//            }
             while ((tmp = br.readLine()) != null)
                 sb.append(tmp).append('\n');
             // 解析结果
             System.out.println("接收数据：" + sb.toString());
- 
+
             // 解析成数组
-            // JSONArray res = JSON.parseArray(sb.toString());
- 
+//             JSONArray res = JSON.parseArray(sb.toString());
+
             // 解析成对象
             JSONObject res = JSON.parseObject(sb.toString());
             return res;
+//            return null;
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
