@@ -2,6 +2,7 @@ package hc.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
+import hc.service.ElasticsearchService;
 import hc.uniapp.note.dtos.NoteHighDocDto;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -31,7 +32,10 @@ import org.elasticsearch.search.suggest.SuggestBuilders;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,13 +46,13 @@ import static hc.LogUtils.info;
 /**
  * es搜索服务
  */
-@Component
+@Service
 @Slf4j
-public class ElasticSearcherClient {
+public class ElasticsearchServiceImpl implements ElasticsearchService {
     private RestHighLevelClient elasticsearchClient;
 
     @Autowired
-    public ElasticSearcherClient(RestHighLevelClient elasticsearchClient) {
+    public ElasticsearchServiceImpl(RestHighLevelClient elasticsearchClient) {
         this.elasticsearchClient = elasticsearchClient;
     }
 
@@ -338,6 +342,14 @@ public class ElasticSearcherClient {
         request.source().sort(sortColumn, SortOrder.DESC);
         return highLightResponse(highColumn,request);
     }
+
+    /**
+     * 字符自动补全功能
+     * @param libraryName
+     * @param column
+     * @param prefix
+     * @return
+     */
     public List<String> querySuggest(String libraryName, String column, String prefix){
         SearchRequest request=new SearchRequest(libraryName);
         request.source().suggest(new SuggestBuilder().addSuggestion(

@@ -14,6 +14,7 @@
     <modules>
         <module>timebook-uniapp-service</module>
         <module>timebook-sensitives-service</module>
+        <module>timebook-elasticsearch-service</module>
     </modules>
 
     <properties>

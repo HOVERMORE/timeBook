@@ -28,7 +28,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api-docs/**",
                         "/doc.html/**",
                         "/user/getOpenId",
-                        "/user/login"
+                        "/user/login",
+                        "/apis/**"
                 ).order(1);
     }
 }

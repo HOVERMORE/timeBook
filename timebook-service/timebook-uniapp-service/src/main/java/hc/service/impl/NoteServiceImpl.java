@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import hc.apis.sensitive.ISensitiveClient;
+import hc.common.constants.MqConstants;
 import hc.common.customize.RedisCacheClient;
 import hc.common.customize.Sensitive;
 import hc.common.dtos.ResponseResult;
@@ -21,6 +22,7 @@ import hc.uniapp.note.dtos.NoteHighDocDto;
 import hc.uniapp.note.dtos.NoteDto;
 import hc.uniapp.note.dtos.NoteSugDocDto;
 import hc.uniapp.note.pojos.Note;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +52,7 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
     @Resource
     private ISensitiveClient sensitiveClient;
     @Resource
-    private ElasticSearcherClient elasticSearcherClient;
+    private RabbitTemplate rabbitTemplate;
     @Override
     public ResponseResult findList() {
         List<Note> notes=query().eq("user_id", UserHolder.getUser().getUserId())
@@ -100,10 +102,9 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
             org.setImages(imageList);
         }
         stringRedisTemplate.delete(CACHE_NOTE_KEY+noteDto.getNoteId());
-        elasticSearcherClient.deleteDocument(TIME_BOOK,org.getNoteId());
         updateById(org);
-        elasticSearcherClient.addIndexDocumentById(TIME_BOOK,
-                new NoteHighDocDto(org), NoteHighDocDto::getNoteId);
+        rabbitTemplate.convertAndSend(MqConstants.TIMEBOOK_EXCHANGE,
+                MqConstants.TIMEBOOK_UPDATE_KEY,org.getNoteId());
         return ResponseResult.okResult(200,"修改成功");
     }
 
@@ -129,11 +130,8 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
                     .setImageId(id);
             imageNoteService.save(imageNoteDto);
         }
-        boolean bool = elasticSearcherClient.addIndexDocumentById(TIME_BOOK,
-                new NoteSugDocDto(note), NoteSugDocDto::getNoteId);
-        if(!bool){
-            throw new CustomizeException("es新增搜索失败");
-        }
+        rabbitTemplate.convertAndSend(MqConstants.TIMEBOOK_EXCHANGE,
+                MqConstants.TIMEBOOK_INSERT_KEY,note.getNoteId());
         return ResponseResult.okResult();
     }
 
@@ -141,12 +139,10 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
     @Transactional
     public ResponseResult deleteNote(String noteId) {
         removeById(noteId);
+        rabbitTemplate.convertAndSend(MqConstants.TIMEBOOK_EXCHANGE,
+                MqConstants.TIMEBOOK_DELETE_KEY,noteId);
         List<String> removeImageNoteIds = imageNoteService.query().eq("note_id", noteId).list().stream().map(ImageNoteDto::getImageNoteId).collect(Collectors.toList());
         imageNoteService.removeByIds(removeImageNoteIds);
-        boolean bool = elasticSearcherClient.deleteDocument(TIME_BOOK, noteId);
-        if(!bool){
-            throw new CustomizeException("es删除搜索失败");
-        }
         return ResponseResult.okResult();
     }
 }

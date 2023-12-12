@@ -1,8 +1,11 @@
 package hc.timebook;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
 import hc.api.PythonSocket;
+import hc.apis.sensitive.IElasticsearchClient;
+import hc.common.constants.MqConstants;
 import hc.common.customize.RedisCacheClient;
 import hc.common.dtos.ResponseResult;
 import hc.service.*;
@@ -10,11 +13,14 @@ import hc.thread.UserHolder;
 import hc.uniapp.album.pojos.Album;
 import hc.uniapp.image.pojos.Image;
 import hc.uniapp.note.dtos.NoteDto;
+import hc.uniapp.note.dtos.NoteHighDocDto;
+import hc.uniapp.note.dtos.SearchNote;
 import hc.uniapp.note.pojos.Note;
 import hc.uniapp.user.pojos.User;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
@@ -23,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static hc.common.constants.ElasticSearchConstants.SEARCH_CONTENT;
 import static hc.common.constants.RedisConstants.CACHE_ALBUM_KEY;
 import static hc.common.constants.RedisConstants.CACHE_ALBUM_TTL;
 
@@ -42,6 +49,10 @@ public class UniappServiceTest {
     private ImagesService imagesService;
     @Resource
     private NoteService noteService;
+    @Resource
+    private IElasticsearchClient elasticsearchClient;
+    @Resource
+    private RabbitTemplate rabbitTemplate;
     @Test
     void test(){
         setUser();
@@ -137,5 +148,48 @@ public class UniappServiceTest {
     void getNode(){
         Note byId = noteService.getById("1732976803716403202");
         System.out.println(byId);
+    }
+    @Test
+    void elasticsearchClientTest(){
+        ResponseResult noteResponse = elasticsearchClient.searchNote(new SearchNote()
+                .setSearchColumn(SEARCH_CONTENT)
+                .setContent("jintian"));
+        String listStr = JSONUtil.toJsonStr(noteResponse.getData());
+        List<NoteHighDocDto> list = JSONUtil.toList(listStr, NoteHighDocDto.class);
+        if(list!=null){
+            for(NoteHighDocDto n:list)
+                System.out.println(n);
+        }else{
+            System.out.println(6);
+        }
+    }
+    @Test
+    void esSearchSug(){
+        ResponseResult result = searchService.searchSuggestion("c");
+        System.out.println(result);
+    }
+    @Test
+    void esSearchNote(){
+        ResponseResult result = searchService.searchNote("ceshi");
+        System.out.println(result);
+    }
+
+    @Test
+    void RabbitMqInsert(){
+        Note org=noteService.getById("1732976803716403202");
+        rabbitTemplate.convertAndSend(MqConstants.TIMEBOOK_EXCHANGE,
+                MqConstants.TIMEBOOK_INSERT_KEY,org.getNoteId());
+    }
+    @Test
+    void RabbitMqDelete(){
+        String noteId="1732976803716403202";
+        rabbitTemplate.convertAndSend(MqConstants.TIMEBOOK_EXCHANGE,
+                MqConstants.TIMEBOOK_DELETE_KEY,noteId);
+    }
+    @Test
+    void RabbitMqUpdate(){
+        String noteId="1732976803716403202";
+        rabbitTemplate.convertAndSend(MqConstants.TIMEBOOK_EXCHANGE,
+                MqConstants.TIMEBOOK_UPDATE_KEY,noteId);
     }
 }

@@ -4,6 +4,7 @@ import hc.uniapp.image.pojos.Image;
 import hc.uniapp.note.pojos.Note;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @Data
 @Accessors(chain = true)
+@ToString
 public class NoteHighDocDto extends Note implements Serializable {
 
     @ApiModelProperty(value = "高亮内容",required = true)

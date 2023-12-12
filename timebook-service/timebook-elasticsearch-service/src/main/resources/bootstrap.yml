@@ -1,8 +1,8 @@
 server:
-  port: 42500
+  port: 42502
 spring:
   application:
-    name: timebook-uniapp-service
+    name: timebook-elasticsearch-service
   cloud:
     nacos:
       discovery:
@@ -10,3 +10,5 @@ spring:
       config:
         server-addr: 192.168.56.160:8848
         file-extension: yml
+  main:
+    allow-bean-definition-overriding: true

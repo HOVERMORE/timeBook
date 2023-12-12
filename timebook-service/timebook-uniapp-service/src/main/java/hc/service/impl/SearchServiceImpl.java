@@ -2,6 +2,8 @@ package hc.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import hc.apis.sensitive.IElasticsearchClient;
 import hc.apis.sensitive.ISensitiveClient;
 import hc.common.customize.Sensitive;
 import hc.common.exception.ParamErrorException;
@@ -16,6 +18,7 @@ import hc.uniapp.customize.SearchDto;
 import hc.uniapp.image.pojos.Image;
 import hc.uniapp.note.dtos.NoteHighDocDto;
 import hc.uniapp.note.dtos.ImageNoteDto;
+import hc.uniapp.note.dtos.SearchNote;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -40,9 +43,9 @@ public class SearchServiceImpl implements SearchService {
     @Resource
     private ISensitiveClient sensitiveClient;
     @Resource
-    private ElasticSearcherClient elasticSearcherClient;
-    @Resource
     private ImageNoteService imageNoteService;
+    @Resource
+    private IElasticsearchClient elasticsearchClient;
     @Override
     public ResponseResult searchAlbumOrImage(String content) {
         if(StrUtil.isBlank(content)){
@@ -97,19 +100,25 @@ public class SearchServiceImpl implements SearchService {
         }else{
             searchColumn=SEARCH_CONTENT;
         }
-        List<NoteHighDocDto> noteDtos = elasticSearcherClient
-                .queryHighLightAndSort(TIME_BOOK, searchColumn, content, CREATE_TIME, HIGH_COLUMN_CONTENT).stream()
-                .peek(o->{
+        ResponseResult noteResponse = elasticsearchClient.searchNote(new SearchNote()
+                .setSearchColumn(searchColumn)
+                .setContent(content));
+        String listStr = JSONUtil.toJsonStr(noteResponse.getData());
+        List<NoteHighDocDto> noteHighDocDtos = JSONUtil.toList(listStr, NoteHighDocDto.class);
+            if(CollUtil.isNotEmpty(noteHighDocDtos)) {
+                noteHighDocDtos.stream().peek(o-> {
                             List<ImageNoteDto> imageNoteDtoList = imageNoteService.query()
                                     .eq("note_id", o.getNoteId()).list();
-                            List<Image> images=new ArrayList<>();
-                            for (ImageNoteDto i: imageNoteDtoList){
+                            List<Image> images = new ArrayList<>();
+                            for (ImageNoteDto i : imageNoteDtoList) {
                                 Image image = imagesService.getById(i.getImageId());
                                 images.add(image);
                             }
                             o.setImages(images);
-                        }).collect(Collectors.toList());
-        return ResponseResult.okResult(noteDtos);
+                        }
+                ).collect(Collectors.toList());
+            }
+        return ResponseResult.okResult(noteHighDocDtos);
     }
 
     @Override
@@ -122,8 +131,8 @@ public class SearchServiceImpl implements SearchService {
         ResponseResult result = sensitiveClient.checkIsSensitive(sensitive);
         if(result.getCode()!=SUCCESS.getCode())
             return result;
-        List<String> suggests = elasticSearcherClient.querySuggest(TIME_BOOK, SEARCH_SUGGESTION, prefix);
-        return ResponseResult.okResult(suggests);
+        ResponseResult suggests = elasticsearchClient.searchSuggestion(prefix);
+        return suggests;
     }
 
     private boolean checkDateTime(String time){
