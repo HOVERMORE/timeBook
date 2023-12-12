@@ -3,7 +3,7 @@ package hc.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import hc.apis.sensitive.IElasticsearchClient;
+import hc.apis.elasticsearch.IElasticsearchClient;
 import hc.apis.sensitive.ISensitiveClient;
 import hc.common.customize.Sensitive;
 import hc.common.exception.ParamErrorException;

@@ -1,6 +1,6 @@
-package hc.apis.sensitive.fallback;
+package hc.apis.elasticsearch.fallback;
 
-import hc.apis.sensitive.IElasticsearchClient;
+import hc.apis.elasticsearch.IElasticsearchClient;
 import hc.common.dtos.ResponseResult;
 import hc.common.enums.AppHttpCodeEnum;
 import hc.uniapp.note.dtos.SearchNote;

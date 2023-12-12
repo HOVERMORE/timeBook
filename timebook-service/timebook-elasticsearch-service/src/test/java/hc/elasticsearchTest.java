@@ -1,6 +1,9 @@
 package hc;
 
+import hc.apis.note.INoteServiceClient;
 import hc.service.ElasticsearchService;
+import hc.uniapp.note.dtos.NoteSugDocDto;
+import hc.uniapp.note.pojos.Note;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -14,13 +17,13 @@ import static hc.common.constants.ElasticSearchConstants.TIME_BOOK;
 public class elasticsearchTest {
     @Resource
     private ElasticsearchService elasticsearchService;
-//    @Test
-//    void test(){
-//        String p="c";
-//        Prefix prefix=new Prefix().setPrefix(p);
-//        List<String> suggests = elasticsearchService.querySuggest(TIME_BOOK, SEARCH_SUGGESTION, prefix.getPrefix());
-//        for (String str:suggests){
-//            System.out.println(str);
-//        }
-//    }
+    @Resource
+    private INoteServiceClient iNoteServiceClient;
+    @Test
+    void test(){
+        String id="1732976803716403202";
+        Note note = iNoteServiceClient.getNote(id);
+        boolean bool = elasticsearchService.addIndexDocumentById(TIME_BOOK,
+                new NoteSugDocDto(note), NoteSugDocDto::getNoteId);
+    }
 }

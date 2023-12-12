@@ -1,7 +1,7 @@
-package hc.apis.sensitive;
+package hc.apis.elasticsearch;
 
 
-import hc.apis.sensitive.fallback.IElasticsearchClientFallback;
+import hc.apis.elasticsearch.fallback.IElasticsearchClientFallback;
 import hc.common.dtos.ResponseResult;
 import hc.uniapp.note.dtos.SearchNote;
 import org.springframework.cloud.openfeign.FeignClient;

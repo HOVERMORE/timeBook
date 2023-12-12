@@ -1,10 +1,9 @@
 package hc.timebook;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
 import hc.api.PythonSocket;
-import hc.apis.sensitive.IElasticsearchClient;
+import hc.apis.elasticsearch.IElasticsearchClient;
 import hc.common.constants.MqConstants;
 import hc.common.customize.RedisCacheClient;
 import hc.common.dtos.ResponseResult;
@@ -102,7 +101,7 @@ public class UniappServiceTest {
     @Test
     void updateNote(){
         setUser();
-        Note note=new Note().setNoteId("1731874253558648834").setContent("测试");
+        Note note=new Note().setNoteId("1731885282053312513").setContent("真是无语了，老铁").setEmoji("\uD83D\uDE05");
         note.setUserId(UserHolder.getUser().getUserId());
         NoteDto noteDto= BeanUtil.copyProperties(note,NoteDto.class);
         ResponseResult result=noteService.updateNote(noteDto);
@@ -176,9 +175,9 @@ public class UniappServiceTest {
 
     @Test
     void RabbitMqInsert(){
-        Note org=noteService.getById("1732976803716403202");
+        String noteId="1732976803716403202";
         rabbitTemplate.convertAndSend(MqConstants.TIMEBOOK_EXCHANGE,
-                MqConstants.TIMEBOOK_INSERT_KEY,org.getNoteId());
+                MqConstants.TIMEBOOK_INSERT_KEY,noteId);
     }
     @Test
     void RabbitMqDelete(){

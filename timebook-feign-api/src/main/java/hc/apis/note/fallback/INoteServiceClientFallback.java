@@ -1,6 +1,6 @@
-package hc.apis.sensitive.fallback;
+package hc.apis.note.fallback;
 
-import hc.apis.sensitive.INoteServiceClient;
+import hc.apis.note.INoteServiceClient;
 import hc.uniapp.note.pojos.Note;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;

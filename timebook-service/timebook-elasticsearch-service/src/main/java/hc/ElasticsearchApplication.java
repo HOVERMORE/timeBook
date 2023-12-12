@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "hc.apis.sensitive")
+@EnableFeignClients(basePackages = "hc.apis.note")
 @EnableAsync //开启异步调用
 public class ElasticsearchApplication {
     public static void main(String[] args) {

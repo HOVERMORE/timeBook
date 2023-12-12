@@ -1,14 +1,11 @@
 package hc.feign;
 
-import hc.apis.sensitive.IElasticsearchClient;
-import hc.apis.sensitive.INoteServiceClient;
+import hc.apis.elasticsearch.IElasticsearchClient;
+import hc.apis.note.INoteServiceClient;
 import hc.common.dtos.ResponseResult;
-import hc.common.exception.CustomizeException;
 import hc.service.ElasticsearchService;
 import hc.uniapp.note.dtos.NoteHighDocDto;
-import hc.uniapp.note.dtos.NoteSugDocDto;
 import hc.uniapp.note.dtos.SearchNote;
-import hc.uniapp.note.pojos.Note;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -22,8 +19,7 @@ import static hc.common.constants.ElasticSearchConstants.HIGH_COLUMN_CONTENT;
 public class ElasticsearchController implements IElasticsearchClient {
     @Resource
     private ElasticsearchService elasticsearchService;
-    @Resource
-    private INoteServiceClient iNoteServiceClient;
+
     @PostMapping("/searchNote")
     public ResponseResult searchNote(@RequestBody SearchNote searchNote) {
         List<NoteHighDocDto> noteDtos = elasticsearchService
@@ -35,7 +31,6 @@ public class ElasticsearchController implements IElasticsearchClient {
         List<String> suggests = elasticsearchService.querySuggest(TIME_BOOK, SEARCH_SUGGESTION, prefix);
         return ResponseResult.okResult(suggests);
     }
-
 
 
 }

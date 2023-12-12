@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication
 @EnableDiscoveryClient
 @MapperScan("hc.mapper")
-@EnableFeignClients(basePackages = "hc.apis.sensitive")
+@EnableFeignClients(value = {"hc.apis.sensitive","hc.apis.elasticsearch"})
 @EnableAsync //开启异步调用
 public class UniappApplication {
     public static void main(String[] args) {
